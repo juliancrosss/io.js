@@ -229,6 +229,88 @@ verificar con
         En este refactor es un poco mas claro (sin conocer el API), que la
         función `onRequest` se ejecutará cada que el evento `request` en el
         servidor sea llamado.
+        
+*Agregando archivos estaticos de forma sincronica*
 
+    'use strict'
+
+    const http = require('http')
+    const fs = require('fs')
+    const port = process.env.PORT || 8080
+
+    const server = http.createServer()
+
+    server.on('request', onRequest)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onRequest (req, res) {
+        let file = fs.readFileSync('public/index.html')//let es variable en emacscript 6
+        res.end(file)
+    }
+
+    function onListening () {
+        console.log('Server running in port ' + port)
+    }
+
+*Creando el archivo estatico en la carpeta 'public/index.html'*
+
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width-device-width">
+    <title>Animate</title>
+    </head>
+    <body>
+        <h1>hola io.js</h1>
+    </body>
+    </html>
+
+*Ejecutando el servidor*
+
+    node server.js
+    
+*Eliminar la carpeta de forma recursiva*
+
+    rm -rf public/
+    
+##Resumen
+
+    Creamos un servidor web estático muy básico
+
+    En este commit creamos un servidor web estático muy básico, solo está
+    sirviendo un archivo index.html de la carpeta public y estamos
+    utilizando el modulo `fs` para leer el archivo. En este caso hemos
+    utilizado la API síncrona de `fs` (lo cual no es recomendado) y hemos
+    hecho otro par de faltas que es mejor que solucionemos en los próximos
+    commits.
+    
+*Ejecutando el archivo estatico asincronamente*
+
+    'use strict'
+
+    const http = require('http')
+    const fs = require('fs')
+    const port = process.env.PORT || 8080
+
+    const server = http.createServer()
+
+    server.on('request', onRequest)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onRequest (req, res) {
+        fs.readFile('public/index.html', function (err, file){
+            if(err){
+                return res.end(err.message)
+            }
+        res.end(file)
+        })
+    }
+
+    function onListening () {
+    console.log('Server running in port ' + port)
     
     
