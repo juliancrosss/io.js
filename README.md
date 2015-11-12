@@ -589,3 +589,58 @@ verificar con
     módulo, esto nos ha reducido complejidad sin perder control sobre como
     nuestra aplicación está funcionando.
     
+*Instalando browserify*
+
+    npm install --save-dev browserify
+    
+*Resumen*    
+    
+    Soporte browserify y permitir grabar video en el cliente
+
+    En este commit hemos creado una carpeta `client` donde empezaremos a
+    trabajar con nuestro cliente browserify para grabar video y convertirlo
+    en gif animado.
+
+    Para eso instalamos la dependencia `webrtc2images` que funciona en el
+    cliente y también `browserify` como dependencia de desarrollo.
+
+    También creamos un par de scripts en npm (no usaremos ni grunt, ni
+    gulp):
+
+    * Para construir nuestro archivo browserify usaremos `build-js`
+    * Para lanzar el servidor usaremos `start`
+    * Para ejecutar las tareas de construcción después de la instalación usaremos `postinstall`
+    
+*Ejemplo*
+
+        const Webrtc2Images = require('webrtc2images')
+
+        const rtc = new Webrtc2Images({
+            width: 200,
+            height: 200,
+            frames: 10,
+            type: 'images/jpeg',
+            quality: 0.4,
+            interval: 200
+        })
+
+        rtc.startVideo(function (err) {
+            if (err) return logError(err)
+        })
+
+        const record = document.querySelector('#record')
+
+        record.addEventListener('click',  function (e) {
+            e.preventDefault()
+
+        rtc.recordVideo(function (err, frames) {
+            if (err) return logError(err)
+
+    console.log(frames)
+    })
+    }, false)
+
+    function logError (err) {
+        console.error(err)
+    }
+    
