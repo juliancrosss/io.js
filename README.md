@@ -313,4 +313,279 @@ verificar con
     function onListening () {
     console.log('Server running in port ' + port)
     
+*Ruta realativa*
+
+    'use strict'
+
+    const http = require('http')
+    const fs = require('fs')
+    const path = require('path')
+    const port = process.env.PORT || 8080
+
+    const server = http.createServer()
+
+    server.on('request', onRequest)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onRequest (req, res) {
+        let fileName = path.join(__dirname, 'public', 'index.html')
+        fs.readFile(fileName, function (err, file){
+            if(err){
+                return res.end(err.message)
+            }
+            res.end(file)
+        })
+    }
+    
+##Resumen
+
+    Refactor: Utilizar path y fs asíncrono
+
+    En este commit utilizamos el modulo `path` para manejo de rutas de
+    archivos, es muy mala práctica manejar estas rutas sin este modulo pues
+    hay sistemas operativos (como Windows) que manejan los paths diferentes.
+
+    También hemos cambiado el llamado del archivo de síncrono a asíncrono y
+    enviamos la cabecera `Content-Type` en la petición http, poco a poco
+    nuestro servidor va cogiendo mejor forma.
+    
+##Streams
+
+*Como se envia la informacion*
+
+    'use strict'
+
+    const http = require('http')
+    const fs = require('fs')
+    const path = require('path')
+    const port = process.env.PORT || 8080
+
+    const server = http.createServer()
+
+    server.on('request', onRequest)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onRequest (req, res) {
+        let index = path.join(__dirname, 'public', 'index.html')
+
+        res.setHeader('Content-Type', 'text/html')
+        let rs = fs.createReadStream(index)
+        rs.pipe(res)
+
+        rs.on('error', function (err){
+        rs.end(err.message)
+    })
+    
+    
+##Resumen
+
+    Refactor: Utilizar streams en `fs`
+
+    En este commit hacemos un refactor para utilizar Streams, uno de los
+    conceptos mas poderosos de io.js / Node.
+
+    En el anterior paso el archivo de carga todo en el buffer y cuando este
+    termina de cargarse lo pasa al response cuando esta listo. Con streams a
+    medida que se va leyendo el archivo este lo va pasando al responde y el
+    performance es mucho mejor (Claro esta, que es visto cuando se trabaja
+    con archivos mas grandes)
+
+    A medida de este curso vamos a utilizar los 3 conceptos: callbacks,
+    event emitter y streams para potenciar nuestra programación asíncrona
+    con io.js
+    
+    
+*Manego de string en emacscript 6*
+
+    'use strict'
+
+    const http = require('http')
+    const fs = require('fs')
+    const path = require('path')
+    const port = process.env.PORT || 8080
+
+    const server = http.createServer()
+
+    server.on('request', onRequest)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onRequest (req, res) {
+        let index = path.join(__dirname, 'public', 'index.html')
+        let rs = fs.createReadStream(index)
+
+        res.setHeader('Content-Type', 'text/html')
+        rs.pipe(res)
+
+        rs.on('error', function (err) {
+            res.setHeader('Content-Type', 'text/plain')
+            res.end(err.message)
+        })
+    }
+
+    function onListening () {
+        console.log(`Server running in port ${port}`)// se manega con ` y las variables con ${port}
+    }
+    
+##Resumen
+
+    Refactor: Usar template strings (ES6)
+
+    Template strings es una caracteristica de ES6, con este ya podemos
+    concatenar información a un string de una manera mucho mas limpia, este
+    es un pequeño refactor educativo ;)
+    
+    rm -rf public/app.js //borrar datos
+    
+    Broken: Intentar servir un archivo js en el cliente
+
+    Nuestra aplicación también necesitará serviro archivos en el cliente, no
+    solo html sino css y js, en este commit lo intentamos pero vemos que
+    nuestro servidor no es lo suficientemente inteligente para entregarnos
+    el archivo app.js que necesitamos.
+    
+*Ejecutando otros archivos estaticos*
+
+        'use strict'
+
+        const http = require('http')
+        const fs = require('fs')
+        const path = require('path')
+        const port = process.env.PORT || 8080
+
+        const server = http.createServer()
+
+        server.on('request', onRequest)
+        server.on('listening', onListening)
+
+        server.listen(port)
+
+        function onRequest (req, res) {
+            let uri = req.url
+
+            if (uri.startsWith('/index') || uri === '/') return serveIndex(res)
+
+                if (uri.startsWith('/app.js')) return serveApp(res)
+
+                    res.statusCode = 404
+                    res.setHeader('Content-Type', 'text/plain')
+                    res.end(`404 Not found: ${uri}`)
+                }
+
+            function serveIndex (res) {
+            let index = path.join(__dirname, 'public', 'index.html')
+            let rs = fs.createReadStream(index)
+
+            res.setHeader('Content-Type', 'text/html')
+            rs.pipe(res)
+
+            rs.on('error', function (err) {
+            res.setHeader('Content-Type', 'text/plain')
+            res.end(err.message)
+        })
+    }
+
+    function serveApp (res) {
+        let app = path.join(__dirname, 'public', 'app.js')
+        let rs = fs.createReadStream(app)
+
+        res.setHeader('Content-Type', 'text/javascript')
+        rs.pipe(res)
+
+        rs.on('error', function (err) {
+        res.setHeader('Content-Type', 'text/plain')
+        res.end(err.message)
+    })
+    }
+
+    function onListening () {
+        console.log(`Server running in port ${port}`)
+    }
+
+
+##Resumen
+    
+    Fix: Servir index y app.js sin problemas
+
+    En este commit creamos dos metodos `serveIndex` y `serveApp`, estos
+    serán utilizados para servir nuestro archivo index y javascript, pero...
+    si seguimos este patrón nuestro código empezará a ser muy dificil de
+    mantener de ahora en adelante.
+
+    En los siguientes pasos vamos a ver como podemos agregar es lio sin
+    necesidad de utilizar un framework completo, para esto usaremos
+    librerias que solucionan problemas especificos como el de servir
+    archivos estaticos y manejar rutas
+    
+*Instalando un modulo para servir archivos estaticos en el servidor node o io*
+
+    npm install st --save // --save , sava la dependencia en nuestro package.json
+    
+*Mejorando el codigo con un dentro de la carpeta router para routear las urls*
+
+    router/index.js
+    
+    const path = require('path')
+    const st = require('st')
+
+    const mount = st({
+        path: path.join(__dirname, '..', 'public'),
+        index: 'index.html'
+    })
+
+    function onRequest (req, res) {
+        mount(req, res, function (err) {
+        if (err) return fail(err, res)
+
+            res.statusCode = 404
+            res.end(`404 Not Found: ${req.url}`)
+        })
+    }
+
+    function fail (err, res) {
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'text/plain')
+        res.end(err.message)
+    }
+
+    module.exports = onRequest
+    
+    
+*Dentro de server.js*
+
+    'use strict'
+
+    const http = require('http')
+    const router = require('./router')
+
+    const server = http.createServer()
+    const port = process.env.PORT || 8080
+
+    server.on('request', router)
+    server.on('listening', onListening)
+
+    server.listen(port)
+
+    function onListening () {
+        console.log(`Server running in port ${port}`)
+    }
+    
+    
+##Resumen 
+    
+    
+    Refactor: Utilizar `st` para manejo de archivos estáticos
+
+    En este commit creamos un modulo llamado `router`, en este modulo vamos
+    a manejar todo lo relacionado con las rutas y archivos de nuestra
+    aplicación, inicialmente utilzamos `st` un modulo que me permite montar
+    una carpeta como estática en mi proyecto web ahora cualquier tipo de
+    archivo que se encuentre en la carpeta `public` será servido por este
+    módulo, esto nos ha reducido complejidad sin perder control sobre como
+    nuestra aplicación está funcionando.
     
